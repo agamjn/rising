@@ -1,0 +1,18 @@
+{
+  "name": "rising-marketplace",
+  "owner": {
+    "name": "Agam Jain"
+  },
+  "plugins": [
+    {
+      "name": "rising",
+      "description": "Personal Reddit content engine. Researches subreddit trends and proposes 3 authentic posts daily based on your writing style, goals, and what's worked for you historically.",
+      "version": "0.1.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/agamjn/rising",
+        "path": "."
+      }
+    }
+  ]
+}

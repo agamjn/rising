@@ -1,0 +1,95 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate plugin.json is valid JSON and has required fields
+        run: |
+          jq empty .claude-plugin/plugin.json
+          for field in name description version; do
+            value=$(jq -r ".${field} // empty" .claude-plugin/plugin.json)
+            if [ -z "$value" ]; then
+              echo "::error::plugin.json missing required field: ${field}"
+              exit 1
+            fi
+          done
+
+      - name: Validate marketplace.json is valid JSON and has required fields
+        run: |
+          jq empty .claude-plugin/marketplace.json
+          plugins_count=$(jq '.plugins | length' .claude-plugin/marketplace.json)
+          if [ "$plugins_count" -lt 1 ]; then
+            echo "::error::marketplace.json must list at least one plugin"
+            exit 1
+          fi
+          for i in $(seq 0 $((plugins_count - 1))); do
+            for field in name description version source; do
+              value=$(jq -r ".plugins[${i}].${field} // empty" .claude-plugin/marketplace.json)
+              if [ -z "$value" ]; then
+                echo "::error::marketplace.json plugin ${i} missing field: ${field}"
+                exit 1
+              fi
+            done
+          done
+
+  validate-agent-frontmatter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check every agent has name + description frontmatter
+        run: |
+          fail=0
+          for f in agents/*.md; do
+            if ! head -20 "$f" | grep -q "^name:"; then
+              echo "::error file=${f}::missing 'name:' in frontmatter"
+              fail=1
+            fi
+            if ! head -20 "$f" | grep -q "^description:"; then
+              echo "::error file=${f}::missing 'description:' in frontmatter"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check every command has description frontmatter
+        run: |
+          fail=0
+          for f in commands/*.md; do
+            if ! head -20 "$f" | grep -q "^description:"; then
+              echo "::error file=${f}::missing 'description:' in frontmatter"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check every skill has SKILL.md with name + description
+        run: |
+          fail=0
+          for d in skills/*/; do
+            if [ ! -f "${d}SKILL.md" ]; then
+              echo "::error::${d} missing SKILL.md"
+              fail=1
+              continue
+            fi
+            if ! head -20 "${d}SKILL.md" | grep -q "^name:"; then
+              echo "::error file=${d}SKILL.md::missing 'name:' in frontmatter"
+              fail=1
+            fi
+            if ! head -20 "${d}SKILL.md" | grep -q "^description:"; then
+              echo "::error file=${d}SKILL.md::missing 'description:' in frontmatter"
+              fail=1
+            fi
+          done
+          exit $fail
