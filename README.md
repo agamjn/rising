@@ -1,9 +1,9 @@
 # rising
 
-A personal Reddit content engine for founders, marketers, and devrel folks
-who want to do Reddit *right* — not by spamming product blurbs, but by
-researching what their target subs actually talk about and proposing posts
-that fit the community.
+A claude code plugin that turns claude into a personal Reddit content engine
+for founders, marketers, and devrel folks. Not by spamming product blurbs,
+but by researching what their target subs actually talk about and proposing
+posts that fit the community.
 
 The name comes from Reddit's "rising" sort — the posts on their way up. That's
 what this plugin helps you write.
