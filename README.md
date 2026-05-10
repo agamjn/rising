@@ -28,15 +28,16 @@ review, edit, and post manually.
    worked for you
 
 **Daily run** (`/reddit-daily`):
-1. Asks if you posted anything new (paste the URL — it appends to your
-   history and refreshes performance analysis)
-2. Refreshes engagement on your recent posts
-3. Dispatches one research agent **in parallel** for every configured
+1. Refreshes engagement on your recent posts
+2. Dispatches one research agent **in parallel** for every configured
    subreddit — each pulls top-of-week + hot, summarizes themes
-4. Synthesizes 3 post proposals — title, body, target sub, category, and
+3. Synthesizes 3 post proposals — title, body, target sub, category, and
    reasoning that cites which trend it's responding to and why this format
    has worked for you before
-5. Saves to `drafts/YYYY-MM-DD.md`
+4. Saves to `drafts/YYYY-MM-DD.md` and pastes them into chat for review
+
+To log a post after you've made it, use `/reddit-add-post <url>` separately —
+the daily run never blocks on user input.
 
 **Other commands:**
 - `/reddit-add-post <url>` — log a post you made (appends to history,
