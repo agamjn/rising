@@ -103,22 +103,21 @@ Once all researchers report back, launch the **reddit-post-synthesizer** agent. 
 
 The synthesizer reads the rest of CWD (writing-style, post-categories, rules cache) directly and writes the drafts file.
 
-# Step 7 — Wrap up
+# Step 7 — Display proposals in chat AND wrap up
 
-Once the synthesizer finishes, show the user:
+After the synthesizer finishes writing `drafts/<YYYY-MM-DD>.md`, **read that file and paste its full contents into your response message** so the user can review the proposals inline without having to switch to the editor. Don't summarize, don't truncate — paste the whole file verbatim.
+
+Then, **below the pasted proposals**, print the wrap-up:
 
 ```
-Daily run complete.
+---
 
-Drafts: drafts/<YYYY-MM-DD>.md
-  Proposal 1: <category> → r/<sub> — "<title>"
-  Proposal 2: <category> → r/<sub> — "<title>"
-  Proposal 3: <category> → r/<sub> — "<title>"
+Saved to: drafts/<YYYY-MM-DD>.md
 
 <If any subs failed to fetch in Step 4:>
 Skipped subs (curl failed): r/<sub1>, r/<sub2>
 
-Open the file, pick one (or all), edit if needed, post manually on Reddit.
+Pick one (or all), edit if needed, post manually on Reddit.
 When you do, run /reddit-add-post <url> so the engine learns from it.
 ```
 
