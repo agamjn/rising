@@ -109,8 +109,10 @@ you provide.
 - **5 sub-agents** — most heavy lifting happens here, dispatched in parallel
   for fan-out work like per-subreddit research
 - **1 skill** (`reddit-writing-style`) — reusable style-extraction workflow
-- **No MCP server** — uses Claude Code's built-in `WebFetch` against Reddit's
-  public `*.json` endpoints. No OAuth, no install steps, no auth tokens
+- **No MCP server** — slash commands curl Reddit's public `*.json` endpoints
+  directly (Bash + curl, with a Reddit-conformant User-Agent). Sub-agents are
+  pure analyzers reading from a local `.rising/cache/` directory. No OAuth,
+  no install steps, no auth tokens
 - **Per-project data** — everything lives in your CWD. Want a separate
   product? Make a separate folder
 
@@ -151,6 +153,8 @@ do the 10% that has to be human (review, post, engage with comments).
 | `subreddits.md` | Posting subs + non-posting subs, with rationale |
 | `subreddits/<sub>/rules.md` | Cached rules per posting sub |
 | `drafts/YYYY-MM-DD.md` | Daily output — 3 proposals |
+| `.rising/config.json` | Your Reddit username (for the API User-Agent) |
+| `.rising/cache/` | Raw Reddit JSON for the current run — gitignored, safe to delete |
 
 Edit any of these freely between runs. The engine uses whatever it finds.
 

@@ -43,12 +43,52 @@ Write `goal.md` with their answer + a brief expansion of what success looks like
 
 Wait for the username.
 
-# Step 4 — Pull post history
+# Step 4 — Persist config and seed cache directory
 
-WebFetch `https://www.reddit.com/user/<username>/submitted.json?limit=100` with User-Agent `rising/0.1 by <username>`.
+Run this Bash command to write `.rising/config.json` and prepare the cache:
 
-- If the response is empty or returns an error suggesting hidden profile: tell the user, point to the toggle steps again, and wait.
-- For each post in the response, extract: title, selftext, subreddit, permalink, created_utc (ISO format), score, num_comments, link_flair_text. Also pull the top 3 comments by score for context.
+```bash
+mkdir -p .rising/cache
+cat > .rising/config.json <<JSON
+{
+  "reddit_username": "<username>"
+}
+JSON
+
+# Add .rising/ to .gitignore (creates if missing, appends if missing the line)
+touch .gitignore
+grep -qxF '.rising/' .gitignore || echo '.rising/' >> .gitignore
+```
+
+Substitute `<username>` with the value the user gave.
+
+# Step 5 — Pull post history (Bash + curl)
+
+Reddit's API rejects requests without a conformant User-Agent. **Always use Bash + curl, never WebFetch, for Reddit endpoints.**
+
+Run this Bash command:
+
+```bash
+USERNAME=$(jq -r .reddit_username .rising/config.json)
+UA="script:com.github.agamjn.rising:v0.1.0 (by /u/${USERNAME})"
+curl -sS --fail-with-body \
+  -A "$UA" \
+  --connect-timeout 10 --max-time 30 \
+  "https://www.reddit.com/user/${USERNAME}/submitted.json?limit=100" \
+  -o ".rising/cache/${USERNAME}-submissions.json"
+```
+
+If the curl exits non-zero or the resulting JSON has no `data.children` (empty list), tell the user their profile is likely hidden — point them back to the toggle steps and wait for them to retry.
+
+Read the saved JSON and parse each post. For each post in `data.children[].data`, extract: `title`, `selftext`, `subreddit`, `permalink`, `created_utc` (convert to ISO date), `score`, `num_comments`, `link_flair_text`. Also pull the top 3 comments by score for context — for each post, fetch its comments via:
+
+```bash
+curl -sS --fail-with-body -A "$UA" --connect-timeout 10 --max-time 30 \
+  "https://www.reddit.com<permalink>.json?limit=100" \
+  -o ".rising/cache/post-<id>.json"
+```
+
+Issue these per-post comment fetches in parallel — multiple Bash tool calls in a single message. (Up to ~20 at a time is fine; Reddit's unauthenticated rate limit is ~60/min.)
 
 Write `posts-history.md` as the canonical append-only log. Format each entry as:
 
@@ -69,21 +109,61 @@ Write `posts-history.md` as the canonical append-only log. Format each entry as:
 
 Order: newest first. This file is the source of truth for every other analysis.
 
-# Step 5 — Analyze writing style (parallel)
+# Step 6 — Brainstorm subreddit candidates and validate them (orchestrator does this, NOT the discoverer agent)
 
-Launch the **reddit-style-analyzer** agent. It will read `posts-history.md`, invoke the writing-style skill, and write `writing-style.md`.
+You (the orchestrator) brainstorm an initial list of ~10-15 subreddit candidates based on the product brief and goal. Think across:
+- Where the target *user* hangs out (posting candidates)
+- Where competitors get discussed or compete (non-posting candidates)
+- Adjacent communities and industry trend signals (non-posting candidates)
 
-# Step 6 — Discover subreddits and cache rules (parallel with step 5)
+For each candidate, fan out parallel curls (single message, multiple Bash tool calls) to validate:
 
-Launch the **reddit-subreddit-discoverer** agent with the product brief and goal as inputs. It will produce `subreddits.md` and cache rules to `subreddits/<sub>/rules.md` for each posting sub.
+```bash
+USERNAME=$(jq -r .reddit_username .rising/config.json)
+UA="script:com.github.agamjn.rising:v0.1.0 (by /u/${USERNAME})"
+SUB=<candidate>
 
-Steps 5 and 6 are independent — dispatch them in a single message with two Agent tool calls in parallel.
+curl -sS --fail-with-body -A "$UA" --connect-timeout 10 --max-time 30 \
+  "https://www.reddit.com/r/${SUB}/about.json" \
+  -o ".rising/cache/${SUB}-about.json"
 
-# Step 7 — Performance analysis
+curl -sS --fail-with-body -A "$UA" --connect-timeout 10 --max-time 30 \
+  "https://www.reddit.com/r/${SUB}/about/rules.json" \
+  -o ".rising/cache/${SUB}-rules.json"
+```
 
-After steps 5 and 6 finish, launch the **reddit-performance-analyzer** agent. It reads `posts-history.md` + `product.md`, classifies each post into conversational/soft-promo/promotional, computes per-category stats, and writes `post-categories.md`.
+Filter the candidates:
+- **Drop** if the about.json fetch returned 404 or the body indicates the sub doesn't exist
+- **Drop** if `subscribers` < 1000
+- **Drop** if `subreddit_type` is `private` or `restricted`
 
-# Step 8 — Wrap up
+For the surviving candidates, build the `validated_candidates` array with: `name`, `subscribers`, `over18`, `subreddit_type`, `public_description`, `description`, `submit_text`, `submission_type`.
+
+# Step 7 — Style analysis + subreddit curation (parallel agents)
+
+Dispatch two agents in parallel — single message, two Agent tool calls:
+
+1. **reddit-style-analyzer** — input: `corpus_source: posts-history.md`, `username: <from config>`. It produces `writing-style.md`.
+
+2. **reddit-subreddit-discoverer** — inputs: contents of `product.md`, contents of `goal.md`, the `validated_candidates` array you built. It produces `subreddits.md`.
+
+# Step 8 — Cache rules into per-sub markdown files
+
+After the discoverer finishes and `subreddits.md` exists, parse it for the chosen **posting** subs. For each posting sub, run:
+
+```bash
+mkdir -p "subreddits/${SUB}"
+jq -r '.rules[] | "## \(.short_name)\n\n\(.description)\n"' \
+  ".rising/cache/${SUB}-rules.json" > "subreddits/${SUB}/rules.md"
+```
+
+This writes the rules verbatim from the cached JSON into the per-sub markdown the daily run consumes.
+
+# Step 9 — Performance analysis
+
+Launch the **reddit-performance-analyzer** agent. It reads `posts-history.md` + `product.md`, classifies each post into conversational/soft-promo/promotional, computes per-category stats, and writes `post-categories.md`.
+
+# Step 10 — Wrap up
 
 Summarize what was generated:
 
@@ -96,6 +176,7 @@ Setup complete. Files in <CWD>:
   post-categories.md  — performance breakdown (conversational: X avg ↑, soft-promo: Y, promotional: Z)
   subreddits.md       — N posting subs + M non-posting subs
   subreddits/         — cached rules per posting sub
+  .rising/            — config + raw JSON cache (gitignored)
 
 Reminder: you can hide your Reddit profile again now. Use /reddit-add-post <url>
 to log future posts so the engine keeps learning.
@@ -107,5 +188,7 @@ Optional: run /reddit-schedule "weekdays at 9am" to automate it.
 # Quality bar
 
 - Every step requires the user's actual input — don't fabricate the product brief, goal, or username.
-- If any step fails (failed fetch, empty corpus, etc.), stop and tell the user clearly. Don't generate fake content.
+- **Never use WebFetch for Reddit URLs.** Reddit blocks generic User-Agents; only Bash + curl with the explicit `-A "$UA"` header reliably works.
+- If any curl fails (non-zero exit), surface the error to the user with the URL and exit code. Don't silently fabricate content.
 - All file writes happen in CWD. Never write outside CWD.
+- WebFetch is fine for **non-Reddit** URLs (the product website in Step 1).
