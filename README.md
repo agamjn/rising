@@ -89,12 +89,14 @@ The setup pulls your posts via Reddit's public JSON API, which **only works
 on public profiles**. Most users hide their profile by default.
 
 **The recommended flow:**
-1. Before running `/reddit-setup`, go to https://www.reddit.com/settings →
-   Profile → toggle ON "Show active communities" and "Make my profile
-   visible to search engines"
+1. Before running `/reddit-setup`, make your Reddit profile public:
+   - Click your profile avatar (top right) → **User Settings**
+   - Open the **Profile** tab → scroll to **Content and Activity** and
+     turn on the toggles that make your posts and comments visible
+   - Open the **Privacy** tab → toggle ON **Show up in search results**
 2. Run `/reddit-setup` — it pulls your full history and saves it to
    `posts-history.md` in your project folder
-3. Hide your profile again (toggle OFF)
+3. Hide your profile again (flip those toggles back off)
 4. From then on, log new posts manually with `/reddit-add-post <url>` —
    the engine grows your history without your profile being public
 

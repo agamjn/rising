@@ -32,12 +32,13 @@ Write `goal.md` with their answer + a brief expansion of what success looks like
 
 **This step has a critical caveat. Surface it BEFORE asking for the username:**
 
-> "I need to fetch your past Reddit posts to learn your writing style and figure out what's worked for you. Reddit's public JSON API only returns submissions for **public** profiles. If yours is hidden:
+> "I need to fetch your past Reddit posts to learn your writing style and figure out what's worked for you. Reddit's public JSON API only returns submissions for **public** profiles. If yours is hidden, here's how to flip it on temporarily:
 >
-> 1. Go to https://www.reddit.com/settings → **Profile** tab
-> 2. Toggle **ON**: 'Show active communities' and 'Make my profile visible to search engines'
-> 3. Save. Come back here.
-> 4. After this setup finishes, you can flip both toggles **OFF** again — from then on you'll log new posts manually with `/reddit-add-post <url>` so we keep growing your history without your profile being public.
+> 1. Click your profile avatar in the top right → **User Settings**
+> 2. Open the **Profile** tab → scroll to **Content and Activity** and turn on the toggles that make your posts and comments visible
+> 3. Open the **Privacy** tab → toggle ON **Show up in search results**
+> 4. Come back here.
+> 5. After this setup finishes, you can flip all those toggles **OFF** again — from then on you'll log new posts manually with `/reddit-add-post <url>` so we keep growing your history without your profile being public.
 >
 > Ready? Paste your Reddit username (without the `u/`):"
 
